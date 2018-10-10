@@ -19,22 +19,29 @@
 //  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 //  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import {
-    Handlers, keepState, nextState, StateMachine, Timeout
-} from 'gen-statem'
-import uniqid = require('uniqid')
+import { Handlers, keepState, nextState, StateMachine } from 'gen-statem'
+import { Controllable } from "./Controllable"
+import { RunningJob } from "./RunningJob"
+import { TaskData } from "./TaskData"
+import { TaskOptions } from "./TaskOptions"
+import { Job } from "./types"
+import  uniqid = require('uniqid')
 
-type TaskSMData<R> = {
-    errors?: [],
-    timeout?: Timeout
-    result?: R
-    request?: any
-    sessionId?: string
-}
 
-export default class TaskWrapper<R> extends StateMachine<TaskSMData<R>> {
+/**
+ * Encapsulates arbitrary 'work'. Provides an
+ * @event Task#event:cancel
+ * @type TaskData
+ * Fired when a running job is cancelled.
+ */
+export class Task<E, R>
+    extends StateMachine<TaskData<E, R>>
+    implements Controllable<E, R>, TaskOptions<E, R> {
 
-    handlers: Handlers<TaskSMData<R>> = [
+    /**
+     * @hidden
+     */
+    handlers: Handlers<TaskData<E, R>> = [
 
         // clear all data when we enter 'idle'
         // set the session id so that we know if any
@@ -44,21 +51,30 @@ export default class TaskWrapper<R> extends StateMachine<TaskSMData<R>> {
             .emit('init')
             .data({
                 errors: {$set: []},
+                progress: {$set: 0},
+                request: {$set: null},
                 result: {$set: null},
                 sessionId: {$set: uniqid()}
             })],
 
         // start kicks off the task. Record the request.
-        ['cast#start#idle', ({event}) =>
-            nextState('running')
-                .data({request: {$set: event.extra}})],
+        ['call/:from#start#:state', ({data, args, event}) =>
+            args.state === 'idle'
+            ? nextState('running')
+                .data({request: {$set: event.extra}})
+                .reply(args.from, data.sessionId)
+            : keepState().reply(args.from, undefined)],
 
         // emit 'run' to tell the user to start the job
         // also start the stateTimeout if a timeout is set
-        ['enter#*_#running', ({data}) => {
-            const res = keepState().emit('run', data)
-            return data.timeout ? res.stateTimeout(data.timeout) : res
-        }],
+        ['enter#*_#running', ({data}) =>
+            (x => !data.timeout ? x : x.stateTimeout(data.timeout))(
+                keepState().emit('run', data))],
+
+        ['cast#update/:sessionId#running', ({data, args, event}) =>
+            (x => args.sessionId !== data.sessionId ? x :
+                  x.data({progress: {$set: event.extra}})
+                   .emit('progress', event.extra))(keepState())],
 
         // make sure the result is for this session,
         // record the result and go to 'done/done'
@@ -97,52 +113,119 @@ export default class TaskWrapper<R> extends StateMachine<TaskSMData<R>> {
         ['stateTimeout#*_#running', 'done/timeout']
     ]
 
-    initialData: TaskSMData<R> = {}
+    /**
+     * @hidden
+     * @type {{}}
+     */
+    initialData: TaskData<E, R> = {}
 
+    /**
+     * @hidden
+     *
+     * @type {string}
+     */
     initialState = 'idle'
 
-    constructor(timeout?: Timeout) {
+
+    /**
+     *
+     */
+    job?: Job<E, R>
+
+    /**
+     * @hidden
+     *
+     */
+    timeout?: number | string
+
+
+    /**
+     *
+     * @param opts
+     */
+    constructor(opts?: TaskOptions<E, R>) {
         super()
-        this.initialData.timeout = timeout
+        Object.assign(this, opts)
+        this.initialData.timeout = this.timeout
+        if (!this.job) {
+            throw new Error('Job must be specified')
+        }
+        this.exec(this.job)
         this.startSM()
     }
 
-    cancel(reason?: any) {
+    /**
+     *
+     * @param reason
+     */
+    cancel(reason?: any): void {
         this.cast('cancel', reason)
-        return this
     }
 
-    error(sessionId: string, reason?: any) {
-        this.cast({error: sessionId}, reason)
-        return this
-    }
-
-    done(sessionId: string, result?: R) {
-        this.cast({done: sessionId}, result)
-        return this
-    }
-
-    reset() {
+    /**
+     *
+     */
+    reset(): void {
         this.cast('reset')
-        return this
+    }
+
+    /**
+     *
+     * @param request
+     */
+    restart(request?: E): Promise<RunningJob<E, R>> {
+        this.reset()
+        return this.start(request)
     }
 
     /**
      * Starts the task.
      * @param request
-     * @return {this<R>}
+     * @return {Promise<RunningJob<E, R>>}
      */
-    start(request: any) {
-        this.cast('start', request)
-        return this
+    async start(request?: E): Promise<RunningJob<E, R>> {
+        let sessionId = await this.call('start', request)
+        if (typeof sessionId !== 'string') {
+            throw new Error("Unable to start task")
+        }
+        return new RunningJob<E, R>(sessionId, this)
+    }
+
+    /**
+     *
+     * @param sessionId
+     * @param result
+     * @return {this<E, R>}
+     */
+    done(sessionId: string, result ?: R):
+        void {
+        this.cast({done: sessionId}, result)
+    }
+
+    /**
+     *
+     * @param sessionId
+     * @param reason
+     * @return {this<E, R>}
+     */
+    error(sessionId: string, reason ?: any): void {
+        this.cast({error: sessionId}, reason)
+    }
+
+    /**
+     *
+     * @param sessionId
+     * @param progress
+     */
+    update(sessionId: string, progress: number): void {
+        this.cast({update: sessionId}, progress)
     }
 
     /**
      *
      * @param fn
-     * @return {this<R>}
      */
-    exec(fn: (req: any) => Promise<R>) {
+    private exec(fn: Job<E, R>): void {
         this.on('run', async ({sessionId, request}) => {
             try {
                 let res = await fn(request)
@@ -152,7 +235,7 @@ export default class TaskWrapper<R> extends StateMachine<TaskSMData<R>> {
                 this.error(sessionId, e)
             }
         })
-        return this
     }
 }
+
 

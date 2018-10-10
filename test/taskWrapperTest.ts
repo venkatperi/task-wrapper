@@ -22,12 +22,14 @@
 import { assert, expect } from 'chai'
 import { State } from "gen-statem"
 import { stateRoute } from "gen-statem/dist/src/State"
+import Deferred from "gen-statem/dist/src/util/Deferred"
 import delay from "gen-statem/dist/src/util/delay"
 import 'mocha'
-import TaskWrapper from "../src/TaskWrapper"
+import { Task } from "../src/Task"
 
 let sm
 let events
+let defer
 
 
 function stateIs(s: State) {
@@ -52,7 +54,11 @@ function eventDidNotFire(name: string, time: number = 10) {
 describe('task state machine', () => {
     beforeEach(() => {
         events = {}
-        sm = new TaskWrapper(200)
+        defer = new Deferred<void>()
+        sm = new Task({
+            job: async () => await defer,
+            timeout: 200,
+        })
         for (let e of ['init', 'run', 'done', 'cancel', 'error', 'timeout']) {
             sm.on(e, () => events[e] = true)
         }
@@ -77,9 +83,10 @@ describe('task state machine', () => {
 
             describe("task completes successfully", () => {
                 beforeEach(async () => {
-                    let d = await sm.getData()
                     await delay(100)  // less than the timeout
-                    sm.done(d.sessionId, {a: 1})
+                    defer.resolve()
+                    await delay(10)
+                    // sm.done(d.sessionId, {a: 1})
                 })
                 stateIs('done/done')
                 eventFired('done')
@@ -99,8 +106,8 @@ describe('task state machine', () => {
 
             describe("task fails", () => {
                 beforeEach(async () => {
-                    let d = await sm.getData()
-                    sm.error(d.sessionId, 'error reason')
+                    defer.reject('error reason')
+                    await delay(10)
                 })
                 stateIs('done/error')
                 eventFired('error')
