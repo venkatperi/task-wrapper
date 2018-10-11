@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "TS_NODE_COMPILER_OPTIONS='{\"noImplicitAny\":false}' mocha "
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"noImplicitAny\":false}' mocha ",
+    "build:tsc": "tsc",
+    "build": "npm run build:tsc && npm run docs",
+    "prepare": "npm run clean && npm run build && cp docs/README.md .",
+    "docs": "typedoc  --out docs --readme doc/R.md --mode file --theme markdown --mdHideSources --excludePrivate --excludeProtected --excludeExternals "
   },
   "author": "Venkat Peri <venkatperi@gmail.com> (http://www.vperi.com/)",
   "license": "MIT",
@@ -22,6 +26,8 @@
     "mocha": "^5.2.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
+    "typedoc": "^0.13.0",
+    "typedoc-plugin-markdown": "^1.1.17",
     "typescript": "^3.1.2"
   }
 }
