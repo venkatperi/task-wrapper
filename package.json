@@ -5,12 +5,15 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "TS_NODE_COMPILER_OPTIONS='{\"noImplicitAny\":false}' mocha ",
-    "build:tsc": "tsc",
+    "prebuild": "npm run clean",
+    "build": "npm run build:ts && npm run build:webpack && npm run build:docs",
+    "build:docs": "typedoc  --out docs --readme doc/R.md --mode file --theme markdown --mdHideSources --excludePrivate --excludeProtected --excludeExternals ",
+    "postbuild:docs" :"cp docs/README.md .",
+    "build:ts": "tsc",
+    "build:webpack": "webpack",
     "clean": "rm -rf dist",
-    "build": "npm run build:tsc && npm run docs",
-    "prepare": "npm run clean && npm run build && cp docs/README.md .",
-    "docs": "typedoc  --out docs --readme doc/R.md --mode file --theme markdown --mdHideSources --excludePrivate --excludeProtected --excludeExternals "
+    "prepare": "npm run build",
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"noImplicitAny\":false}' mocha "
   },
   "files": [
     "/src",
@@ -28,12 +31,16 @@
     "@types/node": "^10.11.6",
     "@types/route-parser": "^0.1.1",
     "@types/uniqid": "^4.1.2",
+    "babel-loader": "^8.0.4",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "typedoc": "^0.13.0",
     "typedoc-plugin-markdown": "^1.1.17",
-    "typescript": "^3.1.2"
+    "typescript": "^3.1.2",
+    "webpack": "^4.20.2",
+    "webpack-bundle-analyzer": "^3.0.2",
+    "webpack-cli": "^3.1.2"
   }
 }
