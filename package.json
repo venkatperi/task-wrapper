@@ -22,7 +22,7 @@
   "author": "Venkat Peri <venkatperi@gmail.com> (http://www.vperi.com/)",
   "license": "MIT",
   "dependencies": {
-    "gen-statem": "^1.2.7",
+    "gen-statem": "^1.3.0",
     "uniqid": "^5.0.3"
   },
   "devDependencies": {
