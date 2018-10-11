@@ -1,6 +1,6 @@
 {
   "name": "task-wrapper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
     "prebuild": "npm run clean",
     "build": "npm run build:ts && npm run build:webpack && npm run build:docs",
     "build:docs": "typedoc  --out docs --readme doc/R.md --mode file --theme markdown --mdHideSources --excludePrivate --excludeProtected --excludeExternals ",
-    "postbuild:docs" :"cp docs/README.md .",
+    "postbuild:docs": "cp docs/README.md .",
     "build:ts": "tsc",
     "build:webpack": "webpack",
     "clean": "rm -rf dist",
