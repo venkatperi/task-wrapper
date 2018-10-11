@@ -6,10 +6,15 @@
   "scripts": {
     "test": "TS_NODE_COMPILER_OPTIONS='{\"noImplicitAny\":false}' mocha ",
     "build:tsc": "tsc",
+    "clean": "rm -rf dist",
     "build": "npm run build:tsc && npm run docs",
     "prepare": "npm run clean && npm run build && cp docs/README.md .",
     "docs": "typedoc  --out docs --readme doc/R.md --mode file --theme markdown --mdHideSources --excludePrivate --excludeProtected --excludeExternals "
   },
+  "files": [
+    "/src",
+    "/dist"
+  ],
   "author": "Venkat Peri <venkatperi@gmail.com> (http://www.vperi.com/)",
   "license": "MIT",
   "dependencies": {
