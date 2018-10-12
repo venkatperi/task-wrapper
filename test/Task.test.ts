@@ -25,7 +25,7 @@ import { stateRoute } from "gen-statem/dist/src/State"
 import Deferred from "gen-statem/dist/src/util/Deferred"
 import delay from "gen-statem/dist/src/util/delay"
 import 'mocha'
-import { Task } from "../src/Task"
+import { Task } from "../src/task/Task"
 
 let sm
 let events

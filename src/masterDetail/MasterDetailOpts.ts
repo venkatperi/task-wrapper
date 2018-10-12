@@ -19,4 +19,12 @@
 //  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 //  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-export type Job<E, R> = (request?: E) => R | Promise<R>
+export interface MasterDetailOpts<E, V> {
+    detailTimeout?: number | string
+
+    loadTimeout?: number | string
+
+    items?: Array<E>
+
+    itemLoader: (item: E) => Promise<V>
+}

@@ -21,10 +21,10 @@
 
 import { Handlers, keepState, nextState, StateMachine } from 'gen-statem'
 import { Controllable } from "./Controllable"
+import { Job } from "./Job"
 import { RunningJob } from "./RunningJob"
 import { TaskData } from "./TaskData"
 import { TaskOptions } from "./TaskOptions"
-import { Job } from "./types"
 import  uniqid = require('uniqid')
 
 
@@ -130,7 +130,7 @@ export class Task<E, R>
     /**
      *
      */
-    job?: Job<E, R>
+    job: Job<E, R>
 
     /**
      * @hidden
@@ -143,10 +143,10 @@ export class Task<E, R>
      *
      * @param opts
      */
-    constructor(opts?: TaskOptions<E, R>) {
+    constructor(opts: TaskOptions<E, R>) {
         super()
-        Object.assign(this, opts)
-        this.initialData.timeout = this.timeout
+        this.initialData.timeout = opts.timeout
+        this.job = opts.job
         if (!this.job) {
             throw new Error('Job must be specified')
         }

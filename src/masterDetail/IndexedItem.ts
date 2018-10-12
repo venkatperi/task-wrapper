@@ -19,11 +19,8 @@
 //  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 //  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { MasterDetail } from './src/masterDetail/MasterDetail'
-import { Task } from './src/task/Task'
+export interface IndexedItem<V> {
+    index: number
 
-
-export {
-    MasterDetail,
-    Task,
+    item?: V
 }

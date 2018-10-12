@@ -19,11 +19,14 @@
 //  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 //  USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import { MasterDetail } from './src/masterDetail/MasterDetail'
-import { Task } from './src/task/Task'
+import { Timeout } from "gen-statem"
 
+export interface MasterDetailData<E, V> {
+    items?: Array<E>,
 
-export {
-    MasterDetail,
-    Task,
+    selectedIndex?: number,
+
+    selectedItem?: V,
+
+    detailTimeout?: Timeout
 }
