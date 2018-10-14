@@ -1,0 +1,30 @@
+
+master:
+@entry:
+- clear(data)
+- emit 'master'
+@exit | select(index): data.selectedIndex = index,
+
+loading:
+@entry: emit 'load'
+@exit | done(item): data.selectedItem = item,
+
+detail:
+@entry: emit 'detail'
+@exit: emit 'exit',
+
+error:
+@entry: emit 'error'
+;
+
+
+initial => master;
+
+master => loading: select(index);
+
+loading => detail: done(item);
+loading => master: exit / setItems(items) / cancel(reason);
+loading => error: error(reason);
+
+detail => master: exit / setItems(items);
+error => master: exit / setItems(items);

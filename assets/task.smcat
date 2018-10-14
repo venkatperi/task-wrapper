@@ -1,0 +1,37 @@
+idle:
+@entry
+- clear data
+- create new sessionId
+- emit 'init'
+@exit: return sessionId ,
+
+
+running:
+  @entry: emit 'run'
+  @exit(done): store result
+  @exit(error): store error reason
+  @exit(cancel): store cancel reason
+  @exit(reset): postpone event,
+
+
+done {
+  success: @entry: emit 'done',
+  error: @entry: emit 'error',
+  cancel: @entry: emit 'cancel',
+  timeout: @entry: emit 'timeout';
+
+  success => idle: reset;
+  error => idle: reset;
+  cancel => idle: reset;
+  timeout => idle: reset;
+}
+
+;
+
+initial => idle;
+idle => running : start(request);
+running => success: done(result);
+running => error: error(reason);
+running => cancel: cancel(reason);
+running => timeout: stateTimeout;
+running => cancel: reset/postpone;
